@@ -40,6 +40,7 @@ jobs:
       - uses: erlef/setup-beam@v1
         with:
           otp-version: ${{matrix.otp}}
+          rebar3-version: 3
 
       - name: Setup postgresql server with postgis
         run: sudo apt install postgresql-${{matrix.pg}} postgresql-contrib-${{matrix.pg}} postgresql-${{matrix.pg}}-postgis-${{matrix.postgis}} postgresql-${{matrix.pg}}-postgis-${{matrix.postgis}}-scripts

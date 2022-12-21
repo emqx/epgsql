@@ -1,10 +1,11 @@
-REBAR = ./rebar3
+REBAR ?= $(or $(shell which rebar3),$(CURDIR)/rebar3)
+REBAR_VERSION ?= 3.18.0
 MINIMAL_COVERAGE = 55
 
 all: compile
 
 $(REBAR):
-	wget https://github.com/erlang/rebar3/releases/download/3.15.2/rebar3
+	wget https://github.com/erlang/rebar3/releases/download/$(REBAR_VERSION)/rebar3
 	chmod +x rebar3
 
 compile: src/epgsql_errcodes.erl $(REBAR)
