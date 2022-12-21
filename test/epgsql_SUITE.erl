@@ -15,6 +15,9 @@
     end_per_suite/1
 ]).
 
+%% logger handler
+-export([log/2]).
+
 -compile([export_all, nowarn_export_all]).
 
 modules() ->
@@ -79,7 +82,8 @@ groups() ->
         ]},
         {generic, [parallel], [
             with_transaction,
-            mixed_api
+            mixed_api,
+            redacted_state
         ]}
     ],
 
@@ -1612,6 +1616,38 @@ pipelined_parse_batch_execute(Config) ->
                end || Ref <- CloseRefs],
               erlang:cancel_timer(Timer)
       end).
+
+redacted_state(Config) ->
+    _Handle = ct:timetrap({seconds, 3}),
+    try
+      logger:add_handler(?MODULE, ?MODULE, #{relay_to => self()}),
+      C = epgsql_ct:connect(Config),
+      true = unlink(C),
+      Reason = {please, ?MODULE, ?FUNCTION_NAME},
+      ok = proc_lib:stop(C, Reason, 1000),
+      receive
+        {log, Message} ->
+            ?assertMatch({report, #{label := {gen_server, terminate},
+                                    reason := Reason,
+                                    state := _}},
+                         Message),
+            {report, #{state := State}} = Message,
+            ?assertMatch(#{rows := information_redacted},
+                         epgsql_sock:state_to_map(State))
+      end
+    after
+      logger:remove_handler(?MODULE)
+    end.
+
+%% =============================================================================
+%% Logger handler
+%% ============================================================================
+
+log(#{msg := Msg}, #{relay_to := Pid}) ->
+    Pid ! {log, Msg};
+log(_, _) ->
+    ok.
+
 %% =============================================================================
 %% Internal functions
 %% ============================================================================
