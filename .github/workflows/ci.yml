@@ -8,7 +8,7 @@ on:
   pull_request:
 jobs:
   test:
-    name: OTP-${{matrix.otp}}, PG-${{matrix.pg}}, PostGIS-${{matrix.postgis}}, OS-${{matrix.os}}
+    name: OTP-${{matrix.otp.version}}, PG-${{matrix.pg}}, PostGIS-${{matrix.postgis}}, OS-${{matrix.os}}
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
@@ -20,27 +20,29 @@ jobs:
         postgis:
           - 3
         otp:
-          - "24.0"
-          - "23.3"
-          - "22.3"
-          - "21.3"
-          - "20.3"
-        include:
-          - otp: "19.3"
-            os: "ubuntu-18.04"
-            pg: 10
-            postgis: "2.4"
+          - version: "25.1"
+            rebar3: "3.19"
+          - version: "24.3"
+            rebar3: "3.18"
+          - version: "23.3"
+            rebar3: "3.17"
+          - version: "22.3"
+            rebar3: "3.16"
+          - version: "21.3"
+            rebar3: "3.15"
+          - version: "20.3"
+            rebar3: "3.14"
     # env:
     #   PATH: ".:/usr/lib/postgresql/12/bin:$PATH"
     env:
       SHELL: /bin/sh            # needed for erlexec
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{matrix.otp}}
-          rebar3-version: 3
+          otp-version: ${{matrix.otp.version}}
+          rebar3-version: ${{matrix.otp.rebar3}}
 
       - name: Setup postgresql server with postgis
         run: sudo apt install postgresql-${{matrix.pg}} postgresql-contrib-${{matrix.pg}} postgresql-${{matrix.pg}}-postgis-${{matrix.postgis}} postgresql-${{matrix.pg}}-postgis-${{matrix.postgis}}-scripts
@@ -52,10 +54,10 @@ jobs:
         run: PATH=$PATH:/usr/lib/postgresql/${{matrix.pg}}/bin/ make test
 
       - name: Upload CT logs artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name: ct_report_pg-${{matrix.pg}}_otp-${{matrix.otp}}
+          name: ct_report_pg-${{matrix.pg}}_otp-${{matrix.otp.version}}
           path: |
             _build/test/logs/ct_run*/
             !_build/test/logs/ct_run*/datadir
