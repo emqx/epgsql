@@ -1,12 +1,14 @@
 %%-*-: erlang -*-
-{"4.6.0",
+{"4.6.1",
  [
+  {"4.6.0", [{load_module, epgsql_sock, brutal_purge, soft_purge, []}]},
   %% We have to restart the application due to a lots of changes
   %% between 4.[4-5].0 with 4.6.0
   {<<"4\\.[4-5]\\\.0">>, [{restart_application, epgsql}]},
   {<<".*">>, []}
  ],
  [
+  {"4.6.0", [{load_module, epgsql_sock, brutal_purge, soft_purge, []}]},
   {<<"4\\.[4-5]\\\.0">>, [{restart_application, epgsql}]},
   {<<".*">>, []}
  ]
