@@ -1,0 +1,13 @@
+%%-*-: erlang -*-
+{"4.6.0",
+ [
+  %% We have to restart the application due to a lots of changes
+  %% between 4.[4-5].0 with 4.6.0
+  {<<"4\\.[4-5]\\\.0">>, [{restart_application, epgsql}]},
+  {<<".*">>, []}
+ ],
+ [
+  {<<"4\\.[4-5]\\\.0">>, [{restart_application, epgsql}]},
+  {<<".*">>, []}
+ ]
+}.
