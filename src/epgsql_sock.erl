@@ -307,7 +307,7 @@ handle_info({Passive, Sock}, #state{sock = Sock} = State)
 
 handle_info({Closed, Sock}, #state{sock = Sock} = State)
   when Closed == tcp_closed; Closed == ssl_closed ->
-    {stop, sock_closed, flush_queue(State#state{sock = undefined}, {error, sock_closed})};
+    {stop, {shutdown, sock_closed}, flush_queue(State#state{sock = undefined}, {error, sock_closed})};
 
 handle_info({Error, Sock, Reason}, #state{sock = Sock} = State)
   when Error == tcp_error; Error == ssl_error ->
@@ -408,8 +408,9 @@ command_exec(Transport, Command, CmdState, State) ->
                 _ ->
                     {noreply, finish(State2, Result)}
             end;
-        {stop, StopReason, Response, State1} ->
+        {stop, StopReason0, Response, State1} ->
             reply(Transport, Response, Response),
+            StopReason = maybe_silence_reason(StopReason0),
             {stop, StopReason, State1}
     end.
 
@@ -830,6 +831,12 @@ handle_xlog_data(StartLSN, EndLSN, WALRecord,
 
 redact_state(State) ->
     State#state{rows = information_redacted}.
+
+%% Avoid spamming logs with crash reports for potentially transient failures.
+maybe_silence_reason(econnrefused = Reason) ->
+    {shutdown, Reason};
+maybe_silence_reason(Reason) ->
+    Reason.
 
 -ifdef(TEST).
 
