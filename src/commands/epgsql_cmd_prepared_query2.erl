@@ -44,7 +44,7 @@ execute(Sock, #pquery2{name = Name, params = Params} = State) ->
             },
             {finish, {error, Error}, Sock};
         #statement{types = Types} = Stmt ->
-            TypedParams = lists:zip(Types, Params),
+            TypedParams = zip(Name, Types, Params),
             #statement{name = StatementName, columns = Columns} = Stmt,
             Codec = epgsql_sock:get_codec(Sock),
             Bin1 = epgsql_wire:encode_parameters(TypedParams, Codec),
@@ -56,6 +56,19 @@ execute(Sock, #pquery2{name = Name, params = Params} = State) ->
                     epgsql_wire:encode_sync()
                 ],
             {send_multi, Commands, Sock, State#pquery2{stmt = Stmt}}
+    end.
+
+zip(Name, Types, Params) ->
+    case length(Types) =:= length(Params) of
+        true ->
+            lists:zip(Types, Params);
+        false ->
+            error(#{cause => "prepared_data_types_and_column_count_mismatch",
+                    name => Name,
+                    types => Types,
+                    types_count => length(Types),
+                    values_count => length(Params)
+                   })
     end.
 
 %% prepared query
