@@ -66,8 +66,8 @@ zip(Name, Types, Params) ->
             error(#{cause => "prepared_data_types_and_column_count_mismatch",
                     name => Name,
                     types => Types,
-                    types_count => length(Types),
-                    values_count => length(Params)
+                    type_count => length(Types),
+                    column_count => length(Params)
                    })
     end.
 
