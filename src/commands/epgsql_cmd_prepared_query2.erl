@@ -32,7 +32,7 @@
 init({Name, Parameters}) ->
     #pquery2{name = Name, params = Parameters}.
 
-execute(Sock, #pquery2{name = Name, params = Params} = State) ->
+execute(Sock, #pquery2{name = Name} = State) ->
     case maps:get(Name, epgsql_sock:get_stmts(Sock), undefined) of
         undefined ->
             Error = #error{
@@ -43,19 +43,28 @@ execute(Sock, #pquery2{name = Name, params = Params} = State) ->
                 extra = []
             },
             {finish, {error, Error}, Sock};
-        #statement{types = Types} = Stmt ->
-            TypedParams = zip(Name, Types, Params),
-            #statement{name = StatementName, columns = Columns} = Stmt,
-            Codec = epgsql_sock:get_codec(Sock),
-            Bin1 = epgsql_wire:encode_parameters(TypedParams, Codec),
-            Bin2 = epgsql_wire:encode_formats(Columns),
-            Commands =
-                [
-                    epgsql_wire:encode_bind("", StatementName, Bin1, Bin2),
-                    epgsql_wire:encode_execute("", 0),
-                    epgsql_wire:encode_sync()
-                ],
-            {send_multi, Commands, Sock, State#pquery2{stmt = Stmt}}
+        #statement{} = Stmt ->
+            do_execute(Sock, State, Stmt)
+    end.
+
+do_execute(Sock, State, Statement) ->
+    #pquery2{name = Name, params = Params} = State,
+    #statement{types = Types, name = StatementName, columns = Columns} = Statement,
+    TypedParams = zip(Name, Types, Params),
+    Codec = epgsql_sock:get_codec(Sock),
+    try
+        Bin1 = epgsql_wire:encode_parameters(TypedParams, Codec),
+        Bin2 = epgsql_wire:encode_formats(Columns),
+        Commands =
+            [
+             epgsql_wire:encode_bind("", StatementName, Bin1, Bin2),
+             epgsql_wire:encode_execute("", 0),
+             epgsql_wire:encode_sync()
+            ],
+        {send_multi, Commands, Sock, State#pquery2{stmt = Statement}}
+    catch
+        throw:#{} = Context ->
+            {finish, {error, Context}, Sock}
     end.
 
 zip(Name, Types, Params) ->

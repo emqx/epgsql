@@ -96,7 +96,9 @@ i2timestamp2(D, T) ->
 
 timestamp2i({Date, Time}) ->
     D = date2j(Date) - ?POSTGRES_EPOC_JDATE,
-    D * ?USECS_PER_DAY + time2i(Time).
+    D * ?USECS_PER_DAY + time2i(Time);
+timestamp2i(X) ->
+    throw(bad_param).
 
 now2i({MegaSecs, Secs, MicroSecs}) ->
     (MegaSecs * 1000000 + Secs) * 1000000 + MicroSecs - ?POSTGRES_EPOC_USECS.

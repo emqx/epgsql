@@ -97,6 +97,7 @@ groups() ->
 
         prepared_query,
         prepared_query2,
+        prepared_query2_bad_params,
         select,
         insert,
         update,
@@ -486,6 +487,24 @@ prepared_query2(Config) ->
         {ok, Cols, [{23}]} = Module:prepared_query2(C, "inc", [22]),
         {error, #error{codename = invalid_sql_statement_name}} =
             Module:prepared_query2(C, "non_existent_query", [4])
+    end).
+
+%% Checks that we don't crash ungracefully if user provides parameters that cannot be
+%% encoded by the intended codec.
+prepared_query2_bad_params(Config) ->
+    Module = ?config(module, Config),
+    epgsql_ct:with_connection(Config, fun(C) ->
+        Name = "bad_params",
+        Column = get_type_col(timestamp),
+        SQL = io_lib:format("insert into test_table2(~s) values ($1)", [Column]),
+        {ok, _} = Module:parse2(C, Name, SQL, []),
+        {error, #{ reason := bad_param
+                 , index := 0
+                 , type := timestamp
+                 , value := <<"2024-06-30 00:10:00">>
+                 }} =
+            Module:prepared_query2(C, Name, [<<"2024-06-30 00:10:00">>]),
+        ok
     end).
 
 select(Config) ->
