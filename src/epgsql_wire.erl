@@ -265,10 +265,19 @@ encode_parameters([], Count, Formats, Values, _Codec) ->
     [<<Count:?int16>>, Formats, <<Count:?int16>> | lists:reverse(Values)];
 
 encode_parameters([P | T], Count, Formats, Values, Codec) ->
-    {Format, Value} = encode_parameter(P, Codec),
-    Formats2 = <<Formats/binary, Format:?int16>>,
-    Values2 = [Value | Values],
-    encode_parameters(T, Count + 1, Formats2, Values2, Codec).
+    try
+        {Format, Value} = encode_parameter(P, Codec),
+        Formats2 = <<Formats/binary, Format:?int16>>,
+        Values2 = [Value | Values],
+        encode_parameters(T, Count + 1, Formats2, Values2, Codec)
+    catch
+        throw:bad_param ->
+            {Type, Value0} = P,
+            throw(#{reason => bad_param,
+                    index => Count,
+                    type => Type,
+                    value => Value0})
+    end.
 
 %% @doc encode single 'typed' parameter
 -spec encode_parameter({Type, Val :: any()},
