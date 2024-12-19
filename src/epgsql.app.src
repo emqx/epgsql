@@ -1,6 +1,6 @@
 {application, epgsql,
  [{description, "PostgreSQL Client"},
-  {vsn, "4.7.1.3"},
+  {vsn, "4.7.1.4"},
   {modules, []},
   {registered, []},
   {applications, [kernel,
